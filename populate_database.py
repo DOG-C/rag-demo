@@ -5,7 +5,7 @@ from langchain.document_loaders import UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from get_embedding_function import get_embedding_function
-from langchain.vectorstores.chroma import Chroma
+from langchain_chroma import Chroma
 
 
 CHROMA_PATH = "chroma"
@@ -40,12 +40,16 @@ def load_documents():
 
 def split_documents(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=80,
+        chunk_size=500,
+        chunk_overlap=50,
         length_function=len,
         is_separator_regex=False,
     )
-    return text_splitter.split_documents(documents)
+    chunks = text_splitter.split_documents(documents)
+    for chunk in chunks:
+        chunk.page_content = "passage: " + chunk.page_content.strip()
+
+    return chunks
 
 
 def add_to_chroma(chunks: list[Document]):
@@ -72,7 +76,6 @@ def add_to_chroma(chunks: list[Document]):
         print(f"👉 Adding new documents: {len(new_chunks)}")
         new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
         db.add_documents(new_chunks, ids=new_chunk_ids)
-        db.persist()
     else:
         print("✅ No new documents to add")
 
